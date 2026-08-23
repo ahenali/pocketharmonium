@@ -1,0 +1,236 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+/*
+ * Pocket Harmonium — web harmonium design system.
+ * Paper, ink and brass: a ledger-page surface with lacquered wood keybed.
+ * All colours are oklch tokens. Never hardcode colours in components.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-brass: var(--brass);
+  --color-brass-deep: var(--brass-deep);
+  --color-maroon: var(--maroon);
+  --color-wood: var(--wood);
+  --color-keybed: var(--keybed);
+  --color-key-white: var(--key-white);
+  --color-key-white-edge: var(--key-white-edge);
+  --color-key-black: var(--key-black);
+  --color-key-black-edge: var(--key-black-edge);
+  --color-key-label: var(--key-label);
+  --color-danger: var(--danger);
+  --color-signal: var(--signal);
+
+  /* shadcn-compatible aliases so any ui primitive inherits the theme */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brass);
+  --color-primary-foreground: var(--card);
+  --color-secondary: var(--paper-deep);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper-deep);
+  --color-muted-foreground: var(--ink-soft);
+  --color-accent: var(--paper-deep);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--card);
+  --color-border: var(--rule);
+  --color-input: var(--rule);
+  --color-ring: var(--brass);
+
+  --shadow-panel: var(--shadow-elevated);
+  --shadow-brass: 0 8px 20px var(--brass-glow);
+}
+
+:root {
+  --radius: 0.5rem;
+  --paper: oklch(0.9903 0.0025 90);
+  --paper-deep: oklch(0.9633 0.004 90);
+  --card: oklch(1 0 0);
+  --ink: oklch(0.2 0.012 60);
+  --ink-soft: oklch(0.525 0.014 70);
+  --rule: oklch(0.2 0.012 60 / 10%);
+  --brass: oklch(0.6122 0.0982 70.66);
+  --brass-deep: oklch(0.4929 0.08 74.46);
+  --brass-glow: oklch(0.6122 0.0982 70.66 / 22%);
+  --maroon: oklch(0.4104 0.1066 23);
+  --wood: oklch(0.2637 0.0245 55);
+  --keybed: oklch(0.2637 0.0245 55);
+  --key-white: oklch(1 0 0);
+  --key-white-edge: oklch(0.885 0.006 90);
+  --key-black: oklch(0.2275 0.0217 60.06);
+  --key-black-edge: oklch(0.1498 0.0129 64.26);
+  --key-label: oklch(0.66 0.012 80);
+  --danger: oklch(0.4418 0.1228 30.4);
+  --signal: oklch(0.5986 0.0973 144.24);
+  --shadow-elevated: 0 12px 32px oklch(0.2637 0.0245 55 / 8%);
+}
+
+
+[data-theme="dark"] {
+  --paper: oklch(0.2275 0.0217 60.06);
+  --paper-deep: oklch(0.199 0.0187 62.62);
+  --card: oklch(0.2542 0.0292 68.14);
+  --ink: oklch(0.9206 0.0376 88.47);
+  --ink-soft: oklch(0.737 0.0478 84.5);
+  --rule: oklch(0.9206 0.0376 88.47 / 12%);
+  --brass: oklch(0.7467 0.1084 79.84);
+  --brass-deep: oklch(0.8455 0.0904 84.39);
+  --brass-glow: oklch(0.7467 0.1084 79.84 / 30%);
+  --maroon: oklch(0.6518 0.1077 28.29);
+  --wood: oklch(0.9206 0.0376 88.47);
+  --keybed: oklch(0.1424 0.0092 71.59);
+  --key-white: oklch(0.3046 0.0336 69.76);
+  --key-white-edge: oklch(0.4072 0.0436 66.09);
+  --key-black: oklch(0.1424 0.0092 71.59);
+  --key-black-edge: oklch(0.1 0.005 70);
+  --key-label: oklch(0.6629 0.0719 91.72);
+  --danger: oklch(0.7181 0.1091 29.16);
+  --signal: oklch(0.7 0.11 144);
+  --shadow-elevated: 0 24px 60px oklch(0 0 0 / 50%);
+}
+
+@layer base {
+  * {
+    border-color: var(--rule);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+  }
+
+  h1 {
+    letter-spacing: -0.035em;
+  }
+
+  ::selection {
+    background: var(--brass-glow);
+  }
+}
+
+/* --- Reusable design-system utilities --- */
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+@utility panel {
+  background-color: var(--card);
+  border: 1px solid var(--key-white-edge);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+}
+
+@utility control-tile {
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+@utility brass-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 3px;
+  outline: none;
+  margin: 0.5rem 0;
+  background: var(--paper-deep);
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--brass);
+    cursor: pointer;
+    margin-top: -5.5px;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 20%);
+  }
+
+  &::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--brass);
+    cursor: pointer;
+  }
+}
+
+@utility display-hero {
+  font-family: var(--font-display);
+  font-size: clamp(3.25rem, 9.5vw, 6.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  font-weight: 400;
+}
+
+@utility display-section {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.6vw, 3.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+}
+
+/* Flat, warm ledger surface — used where a section needs more visual weight
+   than the page background without resorting to a gradient. */
+@utility slab-ink {
+  background-color: var(--wood);
+  color: var(--key-white);
+  border: 1px solid var(--brass-deep);
+}

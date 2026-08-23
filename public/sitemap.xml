@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: set BASE_URL once a project name or custom domain is set. -->
+<urlset xmlns="http://www.sitemap.org/schemas/sitemap/0.9">
+  <url><loc>/</loc><priority>1.0</priority></url>
+  <url><loc>/about</loc><priority>0.7</priority></url>
+  <url><loc>/faq</loc><priority>0.7</priority></url>
+</urlset>
