@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HarmoniumEngine } from "./engine";
 import { NOTE_OF } from "./keys";
+import { readSettings, writeSettings } from "./settings";
 
 export type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -27,6 +28,23 @@ export function useHarmonium() {
 
   const [midiStatus, setMidiStatus] = useState("Checking…");
   const [midiConnected, setMidiConnected] = useState(false);
+
+  /* --- remember settings between visits --- */
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const saved = readSettings();
+    if (saved.volume !== undefined) setVolume(saved.volume);
+    if (saved.reverb !== undefined) setReverb(saved.reverb);
+    if (saved.transpose !== undefined) setTranspose(saved.transpose);
+    if (saved.octaveIndex !== undefined) setOctaveIndex(saved.octaveIndex);
+    if (saved.extraReeds !== undefined) setExtraReeds(saved.extraReeds);
+    if (saved.bpm !== undefined) setBpm(saved.bpm);
+    setRestored(true);
+  }, []);
+  useEffect(() => {
+    if (!restored) return;
+    writeSettings({ volume, reverb, transpose, octaveIndex, extraReeds, bpm });
+  }, [restored, volume, reverb, transpose, octaveIndex, extraReeds, bpm]);
 
   const getEngine = useCallback(() => {
     if (!engineRef.current) {
@@ -120,6 +138,15 @@ export function useHarmonium() {
     getEngine().allNotesOff();
     setHeld(new Set());
   }, [getEngine]);
+
+  /* --- block F7 (caret browsing prompt) so a stray press never interrupts playing --- */
+  useEffect(() => {
+    const blockF7 = (e: KeyboardEvent) => {
+      if (e.key === "F7") e.preventDefault();
+    };
+    window.addEventListener("keydown", blockF7);
+    return () => window.removeEventListener("keydown", blockF7);
+  }, []);
 
   /* --- computer keyboard --- */
   useEffect(() => {
