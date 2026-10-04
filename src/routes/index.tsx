@@ -2,12 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ControlDeck } from "@/components/harmonium/ControlDeck";
 import { Keyboard } from "@/components/harmonium/Keyboard";
-import { PricingModal } from "@/components/harmonium/PricingModal";
-import { SocialLinks } from "@/components/SocialLinks";
 import { chordName } from "@/lib/harmonium/chords";
 import { useHarmonium } from "@/lib/harmonium/useHarmonium";
 import { raagById } from "@/lib/harmonium/raags";
-import { usePremium } from "@/lib/premium";
 import { readSettings, writeSettings } from "@/lib/harmonium/settings";
 
 const title = "Pocket Harmonium — Play a Real Harmonium Online";
@@ -33,10 +30,7 @@ export const Route = createFileRoute("/")({
           applicationCategory: "MultimediaApplication",
           operatingSystem: "Any modern browser",
           description,
-          offers: [
-            { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            { "@type": "Offer", price: "15", priceCurrency: "USD", name: "Lifetime premium" },
-          ],
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
         }),
       },
     ],
@@ -48,8 +42,6 @@ const NOTATION_KEY = "surpeti.notation";
 
 function Index() {
   const h = useHarmonium();
-  const { premium, checkoutConfigured, openCheckout, redeemCode } = usePremium();
-  const [pricingOpen, setPricingOpen] = useState(false);
   const [notation, setNotation] = useState<"sargam" | "western">("sargam");
   const [raagRoot, setRaagRoot] = useState(0);
   const [raagId, setRaagId] = useState("");
@@ -79,9 +71,9 @@ function Index() {
 
   const raagNotes = useMemo(() => {
     const raag = raagById(raagId);
-    if (!raag || !premium) return null;
+    if (!raag) return null;
     return new Set(raag.notes.map((o) => (raagRoot + o) % 12));
-  }, [raagId, raagRoot, premium]);
+  }, [raagId, raagRoot]);
 
   const activeRaag = raagById(raagId);
   const pumping = h.activeCount > 0;
@@ -181,12 +173,10 @@ function Index() {
               onPanic={h.releaseAll}
               notation={notation}
               setNotation={chooseNotation}
-              premium={premium}
               raagRoot={raagRoot}
               setRaagRoot={chooseRaagRoot}
               raagId={raagId}
               setRaagId={chooseRaagId}
-              onUpgrade={() => setPricingOpen(true)}
             />
 
             <div className="mt-5">
@@ -242,25 +232,7 @@ function Index() {
         </div>
       </section>
 
-      <section className="slab-ink mt-16 flex flex-col gap-6 p-8 sm:p-12 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-md">
-          <p className="label-mono !text-brass">premium</p>
-          <h2 className="display-section mt-3 text-key-white">Practice without ads</h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-key-white/75">
-            Premium unlocks the Raag Guide and removes ads — $5 a month, or $15 once and it's
-            yours for good.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setPricingOpen(true)}
-          className="self-start border border-brass bg-brass px-6 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-wood transition hover:brightness-110 md:self-end"
-        >
-          {premium ? "Premium active ✓" : "See premium"}
-        </button>
-      </section>
-
-      <p className="mt-8 text-center text-sm text-ink-soft">
+      <p className="mt-12 text-center text-sm text-ink-soft">
         New to the instrument?{" "}
         <Link to="/about" className="text-brass-deep underline underline-offset-2">
           Read about the harmonium
@@ -271,19 +243,6 @@ function Index() {
         </Link>
         .
       </p>
-
-      <PricingModal
-        open={pricingOpen}
-        onClose={() => setPricingOpen(false)}
-        checkoutConfigured={checkoutConfigured}
-        onCheckout={(priceId) => {
-          const ok = openCheckout(priceId);
-          if (!ok) setPricingOpen(false);
-        }}
-        onRedeem={redeemCode}
-      />
-
-      <SocialLinks />
     </div>
   );
 }

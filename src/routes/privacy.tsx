@@ -65,14 +65,6 @@ export default function Privacy() {
         </p>
       </Section>
 
-      <Section h="Payments and subscriptions">
-        <p>
-          Premium access is billed through a third-party payment provider. Payment details are
-          handled directly by that provider and are never stored by this site. [Name your provider
-          and link its privacy policy here.]
-        </p>
-      </Section>
-
       <Section h="Contact">
         <p>Questions about this policy: [your contact email].</p>
       </Section>

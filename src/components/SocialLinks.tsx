@@ -35,8 +35,10 @@ export function SocialLinks() {
   };
 
   return (
-    <div className="mt-12 flex flex-col items-center gap-2 border-t border-rule pt-8">
-      <p className="label-mono">made by me</p>
+    <div className="mb-5 flex flex-col items-center gap-1.5">
+      <p className="label-mono" aria-live="polite">
+        {copied ? `Copied @${DISCORD_USERNAME}` : "made by me"}
+      </p>
       <div className="flex items-center gap-1">
         <a
           href="https://github.com/ahenali/pocketharmonium"
@@ -68,9 +70,6 @@ export function SocialLinks() {
           <Icon path={DISCORD_PATH} />
         </button>
       </div>
-      <p className="h-4 font-mono text-[11px] text-brass-deep" aria-live="polite">
-        {copied ? `Copied @${DISCORD_USERNAME}` : ""}
-      </p>
     </div>
   );
 }

@@ -7,20 +7,13 @@ stacking, chord detection, metronome, recording, and a raag guide.
 
 **Live demo:** https://pocketharmonium.vercel.app
 
-## Raag Guide
+## Features
 
-The Raag Guide highlights the notes of ten common raags on the keyboard. To
-unlock it:
-
-1. Click **Go Premium** (or **See premium**) in the app.
-2. Under **Have an unlock code?**, enter:
-
-   ```
-   SURPETI-RAAG-2026
-   ```
-
-3. Click **Unlock**. The code is not case-sensitive, and it is remembered in
-   your browser.
+- **Real recorded reeds** — every key is a sampled harmonium reed, pitch-shifted across the keyboard.
+- **Sargam or Western labels** — switch the key labels between Sa Re Ga Ma and C D E F.
+- **Raag Guide** — pick a root note and one of ten common raags (Yaman, Bilawal, Bhairav, Bhairavi, Kafi, Asavari, Khamaj, Bhupali, Marwa, Todi) and the notes of that raag light up on the keyboard. Free for everyone.
+- **Built for riyaz** — metronome, one-click recording, transposition and reed stacking.
+- **Remembers your setup** — volume, reverb, transpose, octave, reeds, BPM and your raag choice are restored the next time you visit.
 
 ## Stack
 
@@ -44,6 +37,7 @@ The app runs at http://localhost:3000 by default.
 
 ```sh
 bun run dev        # start the dev server
-bun run build       # production build
+bun run build      # production build
 bun run preview     # preview the production build locally
-bun run lint         # run 
+bun run lint        # run ESLint
+```

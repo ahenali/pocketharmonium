@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -12,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { SocialLinks } from "../components/SocialLinks";
 
 function NotFoundComponent() {
   return (
@@ -127,6 +129,7 @@ const navLink =
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const onPlayPage = useRouterState({ select: (state) => state.location.pathname === "/" });
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -164,6 +167,7 @@ function RootComponent() {
         </main>
 
         <footer className="relative z-10 mt-12 border-t border-rule px-4 py-7 text-center">
+          {onPlayPage ? <SocialLinks /> : null}
           <p className="font-mono text-[11px] text-ink-soft">
             pocketharmonium.app — a web harmonium for riyaz
           </p>

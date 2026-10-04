@@ -2,12 +2,11 @@ import type { ReactNode } from "react";
 import { NOTE_NAMES } from "@/lib/harmonium/keys";
 import { RAAGS } from "@/lib/harmonium/raags";
 
-function Tile({ label, badge, children }: { label: string; badge?: ReactNode; children: ReactNode }) {
+function Tile({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="control-tile">
       <span className="label-mono flex items-center gap-2 truncate">
         {label}
-        {badge}
       </span>
       <div className="flex flex-1 flex-col justify-center gap-2">{children}</div>
     </div>
@@ -106,12 +105,10 @@ type Props = {
   onPanic: () => void;
   notation: "sargam" | "western";
   setNotation: (v: "sargam" | "western") => void;
-  premium: boolean;
   raagRoot: number;
   setRaagRoot: (v: number) => void;
   raagId: string;
   setRaagId: (v: string) => void;
-  onUpgrade: () => void;
 };
 
 export function ControlDeck(p: Props) {
@@ -252,18 +249,10 @@ export function ControlDeck(p: Props) {
         </div>
       </Tile>
 
-      <Tile
-        label="Raag guide"
-        badge={
-          <span className="rounded-sm bg-brass px-1.5 py-px font-mono text-[8px] tracking-wide text-card">
-            PRO
-          </span>
-        }
-      >
+      <Tile label="Raag guide">
         <select
-          className="w-full rounded-md border border-rule bg-paper-deep px-1.5 py-1 font-mono text-[10px] text-ink disabled:opacity-50"
+          className="w-full rounded-md border border-rule bg-paper-deep px-1.5 py-1 font-mono text-[10px] text-ink"
           value={p.raagRoot}
-          disabled={!p.premium}
           aria-label="Raag root note"
           onChange={(e) => p.setRaagRoot(Number(e.target.value))}
         >
@@ -274,9 +263,8 @@ export function ControlDeck(p: Props) {
           ))}
         </select>
         <select
-          className="w-full rounded-md border border-rule bg-paper-deep px-1.5 py-1 font-mono text-[10px] text-ink disabled:opacity-50"
+          className="w-full rounded-md border border-rule bg-paper-deep px-1.5 py-1 font-mono text-[10px] text-ink"
           value={p.raagId}
-          disabled={!p.premium}
           aria-label="Raag"
           onChange={(e) => p.setRaagId(e.target.value)}
         >
@@ -287,19 +275,6 @@ export function ControlDeck(p: Props) {
             </option>
           ))}
         </select>
-        {p.premium ? (
-          <span className={[toggleBase, "border-brass bg-brass/15 text-center text-brass-deep"].join(" ")}>
-            Premium ✓
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={p.onUpgrade}
-            className={[toggleBase, quietToggle].join(" ")}
-          >
-            Go premium
-          </button>
-        )}
       </Tile>
     </div>
   );
