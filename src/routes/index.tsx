@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ControlDeck } from "@/components/harmonium/ControlDeck";
 import { Keyboard } from "@/components/harmonium/Keyboard";
 import { PricingModal } from "@/components/harmonium/PricingModal";
+import { SocialLinks } from "@/components/SocialLinks";
 import { chordName } from "@/lib/harmonium/chords";
 import { useHarmonium } from "@/lib/harmonium/useHarmonium";
 import { raagById } from "@/lib/harmonium/raags";
@@ -282,28 +283,7 @@ function Index() {
         onRedeem={redeemCode}
       />
 
-      <p className="mt-10 text-center font-mono text-[11px] text-ink-soft">
-        This project was made by me —{" "}
-        <a
-          href="https://github.com/ahenali/pocketharmonium"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brass-deep underline underline-offset-2"
-        >
-          GitHub
-        </a>
-        {" · "}
-        <a
-          href="https://instagram.com/ahennali"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brass-deep underline underline-offset-2"
-        >
-          Instagram @ahennali
-        </a>
-        {" · "}
-        Discord @ahenali
-      </p>
+      <SocialLinks />
     </div>
   );
 }
