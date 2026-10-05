@@ -11,6 +11,17 @@ const TICK_URL = "/audio/tick.wav";
 /** Sustain loop point matching the original recording. */
 const LOOP_START = 0.5;
 
+/**
+ * The recording begins mid-waveform (first sample is about -0.057, not 0), so
+ * starting playback at sample 0 makes a small step from silence that is heard
+ * as a pop on every key press. Starting at the first zero-crossing (~1.75 ms
+ * in) removes the step; every sample after it plays exactly as recorded.
+ */
+const START_OFFSET = 0.00175;
+
+/** Length of the tiny ramp-to-zero on key release (seconds); too short to hear as a fade. */
+const RELEASE_TIME = 0.008;
+
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
 export type EngineSettings = {
@@ -129,13 +140,26 @@ export class HarmoniumEngine {
     src.connect(gain);
     gain.connect(this.dry);
     gain.connect(this.wet);
-    src.start(0);
+    src.start(0, START_OFFSET);
     return { src, gain };
   }
 
   private stopVoice(voice: Voice) {
     try {
-      voice.src.stop(0);
+      const ctx = this.ctx;
+      if (!ctx) {
+        voice.src.stop(0);
+        return;
+      }
+      // Cutting the sound off instantly jumps the waveform from wherever it
+      // is straight to 0, which is heard as a pop. Ramp to 0 over a few ms
+      // first, then stop.
+      const t = ctx.currentTime;
+      const g = voice.gain.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + RELEASE_TIME);
+      voice.src.stop(t + RELEASE_TIME);
     } catch {
       /* already stopped */
     }
