@@ -42,7 +42,7 @@ export default function Terms() {
       <Section h="Raag Guide unlock">
         <p>
           The Raag Guide is unlocked by starring the Pocket Harmonium repository on GitHub. The
-          check runs in your browser against GitHub's public stargazers list and is not a security
+          check runs in your browser against the public list of repositories starred by the username you enter and is not a security
           measure.
         </p>
       </Section>

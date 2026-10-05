@@ -12,7 +12,7 @@ type Status = "idle" | "checking" | StarCheck;
 
 const MESSAGES: Record<Exclude<Status, "idle" | "checking" | "starred">, string> = {
   "not-starred":
-    "We couldn't find that username in the stargazers. Star the repo first, wait a minute, then try again.",
+    "We couldn't find a star on the repo for that username. Check the spelling, star the repo, wait a minute, then try again.",
   "rate-limited": "GitHub is rate-limiting checks from your network right now. Try again later.",
   error: "Couldn't reach GitHub. Check your connection and try again.",
 };
