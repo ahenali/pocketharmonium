@@ -5,7 +5,7 @@ stacking, chord detection, metronome, recording, and a raag guide.
 
 ![Pocket Harmonium demo](assets/demo.gif)
 
-**Live demo:** https://pocketharmonium.vercel.app
+**Live @:** https://pocketharmonium.vercel.app
 
 ## Features
 
@@ -18,8 +18,7 @@ stacking, chord detection, metronome, recording, and a raag guide.
 ## Unlocking the Raag Guide
 
 Star this repository on GitHub, then click **Unlock Raag Guide** in the app, enter your
-GitHub username and press **Unlock**. The app checks that account's public list of starred repositories, and
-the unlock is remembered in your browser.
+GitHub username and press **Unlock**.
 
 ## Stack
 
