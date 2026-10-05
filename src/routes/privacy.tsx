@@ -65,6 +65,14 @@ export default function Privacy() {
         </p>
       </Section>
 
+      <Section h="Unlocking the Raag Guide">
+        <p>
+          When you unlock the Raag Guide, the GitHub username you enter is sent from your browser
+          to GitHub's public API to check the repository's stargazers. The username is saved in
+          your browser's local storage so the unlock is remembered, and is not sent to us.
+        </p>
+      </Section>
+
       <Section h="Contact">
         <p>Questions about this policy: [your contact email].</p>
       </Section>

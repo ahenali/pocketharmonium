@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ControlDeck } from "@/components/harmonium/ControlDeck";
+import { PricingModal } from "@/components/harmonium/PricingModal";
 import { Keyboard } from "@/components/harmonium/Keyboard";
 import { chordName } from "@/lib/harmonium/chords";
 import { useHarmonium } from "@/lib/harmonium/useHarmonium";
 import { raagById } from "@/lib/harmonium/raags";
 import { readSettings, writeSettings } from "@/lib/harmonium/settings";
+import { usePremium } from "@/lib/premium";
 
 const title = "Pocket Harmonium — Play a Real Harmonium Online";
 const description =
@@ -42,6 +44,8 @@ const NOTATION_KEY = "surpeti.notation";
 
 function Index() {
   const h = useHarmonium();
+  const { premium, verifyStar } = usePremium();
+  const [pricingOpen, setPricingOpen] = useState(false);
   const [notation, setNotation] = useState<"sargam" | "western">("sargam");
   const [raagRoot, setRaagRoot] = useState(0);
   const [raagId, setRaagId] = useState("");
@@ -71,9 +75,9 @@ function Index() {
 
   const raagNotes = useMemo(() => {
     const raag = raagById(raagId);
-    if (!raag) return null;
+    if (!raag || !premium) return null;
     return new Set(raag.notes.map((o) => (raagRoot + o) % 12));
-  }, [raagId, raagRoot]);
+  }, [raagId, raagRoot, premium]);
 
   const activeRaag = raagById(raagId);
   const pumping = h.activeCount > 0;
@@ -177,6 +181,8 @@ function Index() {
               setRaagRoot={chooseRaagRoot}
               raagId={raagId}
               setRaagId={chooseRaagId}
+              premium={premium}
+              onUpgrade={() => setPricingOpen(true)}
             />
 
             <div className="mt-5">
@@ -232,7 +238,25 @@ function Index() {
         </div>
       </section>
 
-      <p className="mt-12 text-center text-sm text-ink-soft">
+      <section className="slab-ink mt-16 flex flex-col gap-6 p-8 sm:p-12 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-md">
+          <p className="label-mono !text-brass">premium</p>
+          <h2 className="display-section mt-3 text-key-white">Unlock the Raag Guide</h2>
+          <p className="mt-4 text-[15px] leading-relaxed text-key-white/75">
+            Star Pocket Harmonium on GitHub and all ten raags are yours, free — highlighted note by
+            note right on the keyboard.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPricingOpen(true)}
+          className="self-start border border-brass bg-brass px-6 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-wood transition hover:brightness-110 md:self-end"
+        >
+          {premium ? "Raag Guide unlocked ✓" : "Unlock Raag Guide"}
+        </button>
+      </section>
+
+      <p className="mt-8 text-center text-sm text-ink-soft">
         New to the instrument?{" "}
         <Link to="/about" className="text-brass-deep underline underline-offset-2">
           Read about the harmonium
@@ -243,6 +267,13 @@ function Index() {
         </Link>
         .
       </p>
+
+      <PricingModal
+        open={pricingOpen}
+        onClose={() => setPricingOpen(false)}
+        premium={premium}
+        onVerify={verifyStar}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 const title = "Terms of Use — Pocket Harmonium";
 const description =
-  "Terms for using the Pocket Harmonium web harmonium, including personal-use rights, warranty and liability.";
+  "Terms for using the Pocket Harmonium web harmonium, including personal-use rights, Raag Guide unlock, warranty and liability.";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -36,6 +36,14 @@ export default function Terms() {
           record, and download audio for your own use. The instrument sound is a licensed/owned
           recording — [state your rights to the recording here] — and may not be redistributed as a
           standalone sample pack or resold.
+        </p>
+      </Section>
+
+      <Section h="Raag Guide unlock">
+        <p>
+          The Raag Guide is unlocked by starring the Pocket Harmonium repository on GitHub. The
+          check runs in your browser against GitHub's public stargazers list and is not a security
+          measure.
         </p>
       </Section>
 

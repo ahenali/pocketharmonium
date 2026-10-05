@@ -11,9 +11,15 @@ stacking, chord detection, metronome, recording, and a raag guide.
 
 - **Real recorded reeds** — every key is a sampled harmonium reed, pitch-shifted across the keyboard.
 - **Sargam or Western labels** — switch the key labels between Sa Re Ga Ma and C D E F.
-- **Raag Guide** — pick a root note and one of ten common raags (Yaman, Bilawal, Bhairav, Bhairavi, Kafi, Asavari, Khamaj, Bhupali, Marwa, Todi) and the notes of that raag light up on the keyboard. Free for everyone.
+- **Raag Guide** — pick a root note and one of ten common raags (Yaman, Bilawal, Bhairav, Bhairavi, Kafi, Asavari, Khamaj, Bhupali, Marwa, Todi) and the notes of that raag light up on the keyboard. Unlock it by starring this repo (see below).
 - **Built for riyaz** — metronome, one-click recording, transposition and reed stacking.
 - **Remembers your setup** — volume, reverb, transpose, octave, reeds, BPM and your raag choice are restored the next time you visit.
+
+## Unlocking the Raag Guide
+
+Star this repository on GitHub, then click **Unlock Raag Guide** in the app, enter your
+GitHub username and press **Unlock**. The app checks the repo's public stargazers list, and
+the unlock is remembered in your browser.
 
 ## Stack
 
