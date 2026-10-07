@@ -131,6 +131,16 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const onPlayPage = useRouterState({ select: (state) => state.location.pathname === "/" });
 
+  // Function keys (F1-F12) do nothing on this site, so a stray press while playing
+  // never triggers browser features such as caret browsing (F7) or help (F1).
+  useEffect(() => {
+    const blockFunctionKeys = (e: KeyboardEvent) => {
+      if (/^F([1-9]|1[0-2])$/.test(e.key)) e.preventDefault();
+    };
+    window.addEventListener("keydown", blockFunctionKeys);
+    return () => window.removeEventListener("keydown", blockFunctionKeys);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="relative flex min-h-screen flex-col">

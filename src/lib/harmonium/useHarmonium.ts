@@ -139,15 +139,6 @@ export function useHarmonium() {
     setHeld(new Set());
   }, [getEngine]);
 
-  /* --- block F7 (caret browsing prompt) so a stray press never interrupts playing --- */
-  useEffect(() => {
-    const blockF7 = (e: KeyboardEvent) => {
-      if (e.key === "F7") e.preventDefault();
-    };
-    window.addEventListener("keydown", blockF7);
-    return () => window.removeEventListener("keydown", blockF7);
-  }, []);
-
   /* --- computer keyboard --- */
   useEffect(() => {
     if (loadState !== "ready") return;
