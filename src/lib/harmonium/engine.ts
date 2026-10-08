@@ -75,13 +75,16 @@ export class HarmoniumEngine {
     return this.stacks.size;
   }
 
-  async load(onProgress?: (pct: number) => void) {
+  async load(onProgress?: (pct: number) => void, onFile?: (file: "reed" | "reverb") => void) {
     if (this.loading) return this.loading;
-    this.loading = this.loadInner(onProgress);
+    this.loading = this.loadInner(onProgress, onFile);
     return this.loading;
   }
 
-  private async loadInner(onProgress?: (pct: number) => void) {
+  private async loadInner(
+    onProgress?: (pct: number) => void,
+    onFile?: (file: "reed" | "reverb") => void,
+  ) {
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext: typeof AudioContext })
@@ -107,18 +110,19 @@ export class HarmoniumEngine {
     this.master.connect(this.recordDest);
 
     let done = 0;
-    const fetchBuffer = async (url: string) => {
+    const fetchBuffer = async (url: string, name?: "reed" | "reverb") => {
       const res = await fetch(url);
       const bytes = await res.arrayBuffer();
       const buf = await ctx.decodeAudioData(bytes);
       done += 1;
       onProgress?.(Math.round((done / 3) * 100));
+      if (name) onFile?.(name);
       return buf;
     };
 
     const [reed, reverb, tick] = await Promise.all([
-      fetchBuffer(REED_URL),
-      fetchBuffer(REVERB_URL),
+      fetchBuffer(REED_URL, "reed"),
+      fetchBuffer(REVERB_URL, "reverb"),
       fetchBuffer(TICK_URL),
     ]);
 
