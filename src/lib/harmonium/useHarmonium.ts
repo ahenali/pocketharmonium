@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HarmoniumEngine } from "./engine";
 import { NOTE_OF } from "./keys";
 import { readSettings, writeSettings } from "./settings";
+import { resetLoadStatus, setLoadStatus } from "./loadStatus";
 
 export type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -60,32 +61,31 @@ export function useHarmonium() {
     if (engine.ready) return;
     setLoadState("loading");
     setLoadError(null);
+    resetLoadStatus();
+    setLoadStatus({ state: "loading" });
     try {
-      await engine.load(setLoadPct);
-      await engine.resume();
+      await engine.load(
+        (pct) => {
+          setLoadPct(pct);
+          setLoadStatus({ pct });
+        },
+        (file) => setLoadStatus(file === "reed" ? { reedLoaded: true } : { reverbLoaded: true }),
+      );
+      // Don't wait for this: browsers hold resume() until the first tap or key press, which
+      // would leave the page stuck on "warming the reeds". The first press resumes the audio.
+      void engine.resume().catch(() => {});
+      setLoadStatus({ state: "ready", pct: 100 });
       setLoadState("ready");
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Unknown error");
+      setLoadStatus({ state: "error" });
       setLoadState("error");
     }
   }, [getEngine]);
 
-  /* --- auto-load samples once the page is idle --- */
+  /* --- load the samples as soon as the page mounts (the splash screen covers the wait) --- */
   useEffect(() => {
-    let cancelled = false;
-    const start = () => {
-      if (!cancelled) void load();
-    };
-    const w = window as unknown as {
-      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
-    };
-    const id = w.requestIdleCallback
-      ? w.requestIdleCallback(start, { timeout: 1200 })
-      : window.setTimeout(start, 300);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
+    void load();
   }, [load]);
 
   /* --- settings sync --- */
