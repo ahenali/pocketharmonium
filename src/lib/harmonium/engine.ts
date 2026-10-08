@@ -11,6 +11,23 @@ const TICK_URL = "/audio/tick.wav";
 /** Sustain loop point matching the original recording. */
 const LOOP_START = 0.5;
 
+/**
+ * The recording begins mid-waveform (first sample is about -0.057, not 0), so
+ * starting playback at sample 0 makes a small step from silence that is heard
+ * as a pop on every key press. Starting at the first zero-crossing (~1.75 ms
+ * in) removes the step; every sample after it plays exactly as recorded.
+ */
+const START_OFFSET = 0.00175;
+
+/**
+ * Cutting a voice instantly jumps the waveform from wherever it is straight
+ * to 0, which is heard as a pop. Ramping to 0 over this many seconds first
+ * (just long enough to remove the jump) avoids it. This is the length for
+ * notes at normal pitch and above; low notes are slower and smoother, so
+ * their ramp is lengthened in proportion (see stopVoice).
+ */
+const RELEASE_TIME = 0.002;
+
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
 export type EngineSettings = {
@@ -58,16 +75,13 @@ export class HarmoniumEngine {
     return this.stacks.size;
   }
 
-  async load(onProgress?: (pct: number) => void, onFile?: (file: "reed" | "reverb") => void) {
+  async load(onProgress?: (pct: number) => void) {
     if (this.loading) return this.loading;
-    this.loading = this.loadInner(onProgress, onFile);
+    this.loading = this.loadInner(onProgress);
     return this.loading;
   }
 
-  private async loadInner(
-    onProgress?: (pct: number) => void,
-    onFile?: (file: "reed" | "reverb") => void,
-  ) {
+  private async loadInner(onProgress?: (pct: number) => void) {
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext: typeof AudioContext })
@@ -93,19 +107,18 @@ export class HarmoniumEngine {
     this.master.connect(this.recordDest);
 
     let done = 0;
-    const fetchBuffer = async (url: string, file?: "reed" | "reverb") => {
+    const fetchBuffer = async (url: string) => {
       const res = await fetch(url);
       const bytes = await res.arrayBuffer();
       const buf = await ctx.decodeAudioData(bytes);
       done += 1;
       onProgress?.(Math.round((done / 3) * 100));
-      if (file) onFile?.(file);
       return buf;
     };
 
     const [reed, reverb, tick] = await Promise.all([
-      fetchBuffer(REED_URL, "reed"),
-      fetchBuffer(REVERB_URL, "reverb"),
+      fetchBuffer(REED_URL),
+      fetchBuffer(REVERB_URL),
       fetchBuffer(TICK_URL),
     ]);
 
@@ -133,13 +146,25 @@ export class HarmoniumEngine {
     src.connect(gain);
     gain.connect(this.dry);
     gain.connect(this.wet);
-    src.start(0);
+    src.start(0, START_OFFSET);
     return { src, gain };
   }
 
   private stopVoice(voice: Voice) {
     try {
-      voice.src.stop(0);
+      const ctx = this.ctx;
+      if (!ctx) {
+        voice.src.stop(0);
+        return;
+      }
+      const rate = 2 ** (voice.src.detune.value / 1200);
+      const release = RELEASE_TIME / Math.min(1, rate) ** 0.75;
+      const t = ctx.currentTime;
+      const g = voice.gain.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + release);
+      voice.src.stop(t + release);
     } catch {
       /* already stopped */
     }
