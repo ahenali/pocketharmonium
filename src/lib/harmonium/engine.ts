@@ -28,6 +28,18 @@ const START_OFFSET = 0.00175;
  */
 const RELEASE_TIME = 0.002;
 
+/**
+ * The shape of the release fade: a half-cosine from 1 down to 0. A straight
+ * line has a sharp corner where it starts and ends, and how loud that corner
+ * is depends on where in the wave the key happened to be released, which made
+ * releases tick now and then (most of all in the low octaves). A half-cosine
+ * has no corners, so the fade itself is silent.
+ */
+const RELEASE_CURVE = Float32Array.from(
+  { length: 128 },
+  (_, i) => 0.5 * (1 + Math.cos((Math.PI * i) / 127)),
+);
+
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
 export type EngineSettings = {
@@ -166,8 +178,7 @@ export class HarmoniumEngine {
       const t = ctx.currentTime;
       const g = voice.gain.gain;
       g.cancelScheduledValues(t);
-      g.setValueAtTime(g.value, t);
-      g.linearRampToValueAtTime(0, t + release);
+      g.setValueCurveAtTime(RELEASE_CURVE, t, release);
       voice.src.stop(t + release);
     } catch {
       /* already stopped */
