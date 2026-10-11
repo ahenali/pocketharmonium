@@ -40,6 +40,25 @@ const RELEASE_CURVE = Float32Array.from(
   (_, i) => 0.5 * (1 + Math.cos((Math.PI * i) / 127)),
 );
 
+/**
+ * Output limiter. Notes plus reverb are summed with nothing limiting the
+ * total, so with the volume up, reverb on and notes overlapping (fast playing)
+ * the sum goes past full scale and clips, which is heard as crackle and a
+ * metallic ring in the reverb tail. The limiter does nothing at all below
+ * LIMITER_THRESHOLD_DB; above it, it gently pulls only the peaks down so they
+ * stay under full scale. It adds a fixed ~6 ms of lookahead delay.
+ */
+const LIMITER_THRESHOLD_DB = -1;
+const LIMITER_RATIO = 20;
+/**
+ * The Web Audio compressor applies automatic make-up gain of
+ * (1 / its gain at 0 dBFS) ^ 0.6, which would make everything slightly louder
+ * even below the threshold. This cancels it exactly.
+ */
+const LIMITER_GAIN_AT_FULL_SCALE =
+  10 ** ((LIMITER_THRESHOLD_DB + (0 - LIMITER_THRESHOLD_DB) / LIMITER_RATIO) / 20);
+const LIMITER_MAKEUP_CANCEL = LIMITER_GAIN_AT_FULL_SCALE ** 0.6;
+
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
 export type EngineSettings = {
@@ -116,10 +135,21 @@ export class HarmoniumEngine {
     this.dry.connect(this.master);
     this.wet.connect(this.convolver);
     this.convolver.connect(this.master);
-    this.master.connect(ctx.destination);
+
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = LIMITER_THRESHOLD_DB;
+    limiter.knee.value = 0;
+    limiter.ratio.value = LIMITER_RATIO;
+    limiter.attack.value = 0;
+    limiter.release.value = 0.15;
+    const limiterOut = ctx.createGain();
+    limiterOut.gain.value = LIMITER_MAKEUP_CANCEL;
+    this.master.connect(limiter);
+    limiter.connect(limiterOut);
+    limiterOut.connect(ctx.destination);
 
     this.recordDest = ctx.createMediaStreamDestination();
-    this.master.connect(this.recordDest);
+    limiterOut.connect(this.recordDest);
 
     let done = 0;
     const fetchBuffer = async (url: string, name?: "reed" | "reverb") => {
