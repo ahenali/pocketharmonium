@@ -22,23 +22,9 @@ const START_OFFSET = 0.00175;
 /**
  * Cutting a voice instantly jumps the waveform from wherever it is straight
  * to 0, which is heard as a pop. Ramping to 0 over this many seconds first
- * (just long enough to remove the jump) avoids it. This is the length for
- * notes at normal pitch and above; low notes are slower and smoother, so
- * their ramp is lengthened in proportion (see stopVoice).
+ * (just long enough to remove the jump) avoids it.
  */
 const RELEASE_TIME = 0.002;
-
-/**
- * The shape of the release fade: a half-cosine from 1 down to 0. A straight
- * line has a sharp corner where it starts and ends, and how loud that corner
- * is depends on where in the wave the key happened to be released, which made
- * releases tick now and then (most of all in the low octaves). A half-cosine
- * has no corners, so the fade itself is silent.
- */
-const RELEASE_CURVE = Float32Array.from(
-  { length: 128 },
-  (_, i) => 0.5 * (1 + Math.cos((Math.PI * i) / 127)),
-);
 
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
@@ -173,13 +159,12 @@ export class HarmoniumEngine {
         voice.src.stop(0);
         return;
       }
-      const rate = 2 ** (voice.src.detune.value / 1200);
-      const release = RELEASE_TIME / Math.min(1, rate) ** 0.75;
       const t = ctx.currentTime;
       const g = voice.gain.gain;
       g.cancelScheduledValues(t);
-      g.setValueCurveAtTime(RELEASE_CURVE, t, release);
-      voice.src.stop(t + release);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + RELEASE_TIME);
+      voice.src.stop(t + RELEASE_TIME);
     } catch {
       /* already stopped */
     }
