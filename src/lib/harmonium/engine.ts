@@ -4,27 +4,22 @@ import { OCTAVE_MAP } from "./keys";
  * Served as-is from /public/audio (no build-time processing needed for
  * static binary audio). Place reed.wav, reverb.wav, and tick.wav there.
  */
+import {
+  BAYAN_FILES,
+  DAYAN_SAMPLES,
+  SAMPLE_GAIN,
+  TABLA_DETUNE_CENTS,
+  isDayan,
+  type Sample,
+} from "./tabla";
+
 const REED_URL = "/audio/reed.wav";
 const REVERB_URL = "/audio/reverb.wav";
 const TICK_URL = "/audio/tick.wav";
+const TABLA_URL = "/audio/tabla/";
 
 /** Sustain loop point matching the original recording. */
 const LOOP_START = 0.5;
-
-/**
- * The recording begins mid-waveform (first sample is about -0.057, not 0), so
- * starting playback at sample 0 makes a small step from silence that is heard
- * as a pop on every key press. Starting at the first zero-crossing (~1.75 ms
- * in) removes the step; every sample after it plays exactly as recorded.
- */
-const START_OFFSET = 0.00175;
-
-/**
- * Cutting a voice instantly jumps the waveform from wherever it is straight
- * to 0, which is heard as a pop. Ramping to 0 over this many seconds first
- * (just long enough to remove the jump) avoids it.
- */
-const RELEASE_TIME = 0.002;
 
 type Voice = { src: AudioBufferSourceNode; gain: GainNode };
 
@@ -50,6 +45,12 @@ export class HarmoniumEngine {
 
   private reedBuffer: AudioBuffer | null = null;
   private tickBuffer: AudioBuffer | null = null;
+  private tablaGain: GainNode | null = null;
+  private tablaLevel = 0.8;
+  private bayanBuffers = new Map<string, AudioBuffer>();
+  private dayanSets = new Map<number, Map<string, AudioBuffer>>();
+  private tablaLoads = new Map<string, Promise<void>>();
+  private lastTablaIndex: number | null = null;
 
   private voices = new Map<string, Voice>();
   private stacks = new Map<string, Voice[]>();
@@ -108,13 +109,13 @@ export class HarmoniumEngine {
     this.master.connect(this.recordDest);
 
     let done = 0;
-    const fetchBuffer = async (url: string, name?: "reed" | "reverb") => {
+    const fetchBuffer = async (url: string, file?: "reed" | "reverb") => {
       const res = await fetch(url);
       const bytes = await res.arrayBuffer();
       const buf = await ctx.decodeAudioData(bytes);
       done += 1;
       onProgress?.(Math.round((done / 3) * 100));
-      if (name) onFile?.(name);
+      if (file) onFile?.(file);
       return buf;
     };
 
@@ -148,23 +149,13 @@ export class HarmoniumEngine {
     src.connect(gain);
     gain.connect(this.dry);
     gain.connect(this.wet);
-    src.start(0, START_OFFSET);
+    src.start(0);
     return { src, gain };
   }
 
   private stopVoice(voice: Voice) {
     try {
-      const ctx = this.ctx;
-      if (!ctx) {
-        voice.src.stop(0);
-        return;
-      }
-      const t = ctx.currentTime;
-      const g = voice.gain.gain;
-      g.cancelScheduledValues(t);
-      g.setValueAtTime(g.value, t);
-      g.linearRampToValueAtTime(0, t + RELEASE_TIME);
-      voice.src.stop(t + RELEASE_TIME);
+      voice.src.stop(0);
     } catch {
       /* already stopped */
     }
@@ -208,6 +199,98 @@ export class HarmoniumEngine {
   setReverb(v: number) {
     this.settings.reverb = v;
     if (this.ctx) this.wet.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
+  }
+
+  /* --- tabla --- */
+
+  private ensureTablaGain() {
+    const ctx = this.ctx!;
+    if (!this.tablaGain) {
+      this.tablaGain = ctx.createGain();
+      this.tablaGain.gain.value = this.tablaLevel;
+      this.tablaGain.connect(ctx.destination);
+      this.tablaGain.connect(this.recordDest);
+    }
+    return this.tablaGain;
+  }
+
+  setTablaLevel(v: number) {
+    this.tablaLevel = v;
+    if (this.ctx && this.tablaGain) {
+      this.tablaGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
+    }
+  }
+
+  private async fetchTabla(file: string) {
+    const res = await fetch(`${TABLA_URL}${file}.wav`);
+    if (!res.ok) throw new Error(`Couldn't load ${file}`);
+    return this.ctx!.decodeAudioData(await res.arrayBuffer());
+  }
+
+  /** Load the bayan once, and the dayan recordings tuned to `index` (0-11). Safe to call repeatedly. */
+  loadTabla(index: number): Promise<void> {
+    if (!this.ctx) return Promise.reject(new Error("Audio isn't ready yet"));
+    this.ensureTablaGain();
+    const key = `set-${index}`;
+    const existing = this.tablaLoads.get(key);
+    if (existing) return existing;
+
+    const job = (async () => {
+      if (this.bayanBuffers.size === 0) {
+        const files = await Promise.all(BAYAN_FILES.map((f) => this.fetchTabla(`${f}_0`)));
+        BAYAN_FILES.forEach((f, i) => this.bayanBuffers.set(f, files[i]!));
+      }
+      if (!this.dayanSets.has(index)) {
+        const files = await Promise.all(DAYAN_SAMPLES.map((n) => this.fetchTabla(`${n}_${index}`)));
+        const set = new Map<string, AudioBuffer>();
+        DAYAN_SAMPLES.forEach((n, i) => set.set(n, files[i]!));
+        this.dayanSets.set(index, set);
+      }
+    })();
+    job.catch(() => this.tablaLoads.delete(key));
+    this.tablaLoads.set(key, job);
+    return job;
+  }
+
+  hasTabla(index: number) {
+    return this.bayanBuffers.size > 0 && this.dayanSets.has(index);
+  }
+
+  /**
+   * Schedule one stroke (a single recording). Dayan strokes use the recordings tuned to the
+   * harmonium's Sa; the bayan has one recording per sound and follows the tuning by up to half an
+   * octave. The drum keeps ringing after the loop is stopped.
+   */
+  scheduleSample(time: number, sample: Sample, index: number, accent = false) {
+    const ctx = this.ctx;
+    const out = this.tablaGain;
+    if (!ctx || !out) return;
+    // keep using the last tuning that finished loading while a new one is fetched
+    const useIndex = this.dayanSets.has(index) ? index : this.lastTablaIndex;
+    if (useIndex === null || !this.dayanSets.has(useIndex)) return;
+    this.lastTablaIndex = useIndex;
+
+    let buffer: AudioBuffer | undefined;
+    let cents = TABLA_DETUNE_CENTS;
+    if (isDayan(sample)) {
+      buffer = this.dayanSets.get(useIndex)!.get(sample);
+    } else {
+      buffer = this.bayanBuffers.get(`${sample}_0`) ?? this.bayanBuffers.get(sample);
+      cents += (((useIndex + 6) % 12) - 6) * 100;
+    }
+    if (!buffer) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.detune.value = cents;
+    const g = ctx.createGain();
+    g.gain.value = (SAMPLE_GAIN[sample] ?? 1) * (accent ? 1.15 : 1);
+    src.connect(g);
+    g.connect(out);
+    src.onended = () => {
+      src.disconnect();
+      g.disconnect();
+    };
+    src.start(time);
   }
 
   scheduleTick(time: number, accent: boolean) {

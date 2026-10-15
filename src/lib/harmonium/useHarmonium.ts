@@ -3,6 +3,7 @@ import { HarmoniumEngine } from "./engine";
 import { NOTE_OF } from "./keys";
 import { readSettings, writeSettings } from "./settings";
 import { resetLoadStatus, setLoadStatus } from "./loadStatus";
+import { CLICK_BEATS, CLICK_ID, taalById, tablaIndex } from "./tabla";
 
 export type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -23,6 +24,9 @@ export function useHarmonium() {
   const [bpm, setBpm] = useState(80);
   const [metronomeOn, setMetronomeOn] = useState(false);
   const [beat, setBeat] = useState(-1);
+  const [rhythmId, setRhythmId] = useState<string>(CLICK_ID);
+  const [tablaLevel, setTablaLevel] = useState(80);
+  const [tablaStatus, setTablaStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   const [recording, setRecording] = useState(false);
   const [recMs, setRecMs] = useState(0);
@@ -40,12 +44,25 @@ export function useHarmonium() {
     if (saved.octaveIndex !== undefined) setOctaveIndex(saved.octaveIndex);
     if (saved.extraReeds !== undefined) setExtraReeds(saved.extraReeds);
     if (saved.bpm !== undefined) setBpm(saved.bpm);
+    if (saved.tablaLevel !== undefined) setTablaLevel(saved.tablaLevel);
+    if (saved.rhythmId !== undefined && (saved.rhythmId === CLICK_ID || taalById(saved.rhythmId))) {
+      setRhythmId(saved.rhythmId);
+    }
     setRestored(true);
   }, []);
   useEffect(() => {
     if (!restored) return;
-    writeSettings({ volume, reverb, transpose, octaveIndex, extraReeds, bpm });
-  }, [restored, volume, reverb, transpose, octaveIndex, extraReeds, bpm]);
+    writeSettings({
+      volume,
+      reverb,
+      transpose,
+      octaveIndex,
+      extraReeds,
+      bpm,
+      tablaLevel,
+      rhythmId,
+    });
+  }, [restored, volume, reverb, transpose, octaveIndex, extraReeds, bpm, tablaLevel, rhythmId]);
 
   const getEngine = useCallback(() => {
     if (!engineRef.current) {
@@ -139,6 +156,15 @@ export function useHarmonium() {
     setHeld(new Set());
   }, [getEngine]);
 
+  /* --- block F7 (caret browsing prompt) so a stray press never interrupts playing --- */
+  useEffect(() => {
+    const blockF7 = (e: KeyboardEvent) => {
+      if (e.key === "F7") e.preventDefault();
+    };
+    window.addEventListener("keydown", blockF7);
+    return () => window.removeEventListener("keydown", blockF7);
+  }, []);
+
   /* --- computer keyboard --- */
   useEffect(() => {
     if (loadState !== "ready") return;
@@ -217,11 +243,47 @@ export function useHarmonium() {
     };
   }, [loadState, getEngine]);
 
-  /* --- metronome --- */
+  /* --- metronome and tabla taals --- */
   const bpmRef = useRef(bpm);
   bpmRef.current = bpm;
+  const taal = taalById(rhythmId);
+  const taalBeats = taal ? taal.beats : CLICK_BEATS;
+  const loopTicks = taal ? taal.ticks : CLICK_BEATS;
+  const tablaIdx = tablaIndex(transpose);
+  const tablaIdxRef = useRef(tablaIdx);
+  tablaIdxRef.current = tablaIdx;
+
   useEffect(() => {
-    if (!metronomeOn) {
+    getEngine().setTablaLevel(tablaLevel / 100);
+  }, [tablaLevel, getEngine]);
+
+  // fetch the tabla recordings when a taal is chosen, and again if the tuning (Sa) changes
+  useEffect(() => {
+    if (!taal || loadState !== "ready") return;
+    let cancelled = false;
+    const engine = getEngine();
+    if (engine.hasTabla(tablaIdx)) {
+      setTablaStatus("ready");
+      return;
+    }
+    setTablaStatus((s) => (s === "ready" ? s : "loading"));
+    // wait a moment so clicking through several transpose steps only fetches the last one
+    const timer = setTimeout(() => {
+      engine
+        .loadTabla(tablaIdx)
+        .then(() => !cancelled && setTablaStatus("ready"))
+        .catch(() => !cancelled && setTablaStatus("error"));
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [taal, tablaIdx, loadState, getEngine]);
+
+  const tablaReady = !taal || tablaStatus === "ready";
+
+  useEffect(() => {
+    if (!metronomeOn || !tablaReady) {
       setBeat(-1);
       return;
     }
@@ -232,11 +294,27 @@ export function useHarmonium() {
     const timeouts: ReturnType<typeof setTimeout>[] = [];
     const id = setInterval(() => {
       while (next < engine.currentTime + 0.1) {
-        const accentIndex = count % 4;
-        engine.scheduleTick(next, accentIndex === 0);
+        const beatDur = 60 / bpmRef.current;
+        const index = count % loopTicks;
+        if (taal) {
+          // every stroke that starts inside this tick, at its exact position within the tick
+          for (const [at, ...samples] of taal.strokes) {
+            if (Math.floor(at) !== index) continue;
+            for (const sample of samples) {
+              engine.scheduleSample(
+                next + (at - index) * beatDur,
+                sample,
+                tablaIdxRef.current,
+                at === 0 && sample === samples[0],
+              );
+            }
+          }
+        } else {
+          engine.scheduleTick(next, index === 0);
+        }
         const delay = Math.max(0, (next - engine.currentTime) * 1000);
-        timeouts.push(setTimeout(() => setBeat(accentIndex), delay));
-        next += 60 / bpmRef.current;
+        timeouts.push(setTimeout(() => setBeat(index % taalBeats), delay));
+        next += beatDur;
         count++;
       }
     }, 25);
@@ -244,7 +322,7 @@ export function useHarmonium() {
       clearInterval(id);
       timeouts.forEach(clearTimeout);
     };
-  }, [metronomeOn, getEngine]);
+  }, [metronomeOn, tablaReady, taal, taalBeats, loopTicks, getEngine]);
 
   /* --- recording --- */
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -328,6 +406,12 @@ export function useHarmonium() {
     metronomeOn,
     setMetronomeOn,
     beat,
+    rhythmId,
+    setRhythmId,
+    taalBeats,
+    tablaLevel,
+    setTablaLevel,
+    tablaStatus: taal ? tablaStatus : "idle",
     recording,
     recLabel,
     startRecording,

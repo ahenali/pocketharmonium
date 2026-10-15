@@ -6,6 +6,7 @@ import { Keyboard } from "@/components/harmonium/Keyboard";
 import { chordName } from "@/lib/harmonium/chords";
 import { useHarmonium } from "@/lib/harmonium/useHarmonium";
 import { raagById } from "@/lib/harmonium/raags";
+import { CLICK_ID, taalById } from "@/lib/harmonium/tabla";
 import { readSettings, writeSettings } from "@/lib/harmonium/settings";
 import { usePremium } from "@/lib/premium";
 
@@ -83,6 +84,18 @@ function Index() {
   const pumping = h.activeCount > 0;
   const chord = useMemo(() => chordName(h.held), [h.held]);
 
+  const rhythmTaal = taalById(h.rhythmId);
+  const rhythm = {
+    id: rhythmTaal ? rhythmTaal.id : CLICK_ID,
+    setId: h.setRhythmId,
+    beats: h.taalBeats,
+    sections: rhythmTaal ? rhythmTaal.sections : [4],
+    khali: rhythmTaal ? rhythmTaal.khali : [],
+    status: h.tablaStatus,
+    level: h.tablaLevel,
+    setLevel: h.setTablaLevel,
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-6 pt-10">
       <section className="grid items-end gap-6 border-b border-rule pb-9 md:grid-cols-[1.25fr_1fr]">
@@ -154,6 +167,7 @@ function Index() {
         ) : (
           <>
             <ControlDeck
+              rhythm={rhythm}
               volume={h.volume}
               setVolume={h.setVolume}
               reverb={h.reverb}

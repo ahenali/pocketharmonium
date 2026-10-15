@@ -9,9 +9,11 @@ export type SavedSettings = {
   bpm: number;
   raagRoot: number;
   raagId: string;
+  tablaLevel: number;
+  rhythmId: string;
 };
 
-const RANGES: Record<Exclude<keyof SavedSettings, "raagId">, [number, number]> = {
+const RANGES: Record<Exclude<keyof SavedSettings, "raagId" | "rhythmId">, [number, number]> = {
   volume: [0, 100],
   reverb: [0, 100],
   transpose: [-11, 11],
@@ -19,6 +21,7 @@ const RANGES: Record<Exclude<keyof SavedSettings, "raagId">, [number, number]> =
   extraReeds: [0, 3],
   bpm: [30, 260],
   raagRoot: [0, 11],
+  tablaLevel: [0, 100],
 };
 
 /** Read saved settings, ignoring anything missing or out of range. */
@@ -35,6 +38,7 @@ export function readSettings(): Partial<SavedSettings> {
       }
     }
     if (typeof parsed.raagId === "string") out.raagId = parsed.raagId;
+    if (typeof parsed.rhythmId === "string") out.rhythmId = parsed.rhythmId;
     return out;
   } catch {
     return {};

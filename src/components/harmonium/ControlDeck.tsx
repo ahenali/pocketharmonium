@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { NOTE_NAMES } from "@/lib/harmonium/keys";
 import { RAAGS } from "@/lib/harmonium/raags";
+import { TAALS } from "@/lib/harmonium/tabla";
 
 function Tile({ label, badge, children }: { label: string; badge?: ReactNode; children: ReactNode }) {
   return (
@@ -17,12 +18,14 @@ function Tile({ label, badge, children }: { label: string; badge?: ReactNode; ch
 function Stepper({
   value,
   unit,
+  unitBelow,
   onDown,
   onUp,
   label,
 }: {
   value: string | number;
   unit?: string;
+  unitBelow?: boolean;
   onDown: () => void;
   onUp: () => void;
   label: string;
@@ -31,20 +34,23 @@ function Stepper({
     "flex size-6 shrink-0 items-center justify-center rounded-full border border-rule text-ink-soft transition active:scale-90 hover:border-brass hover:text-brass-deep";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className={["flex items-center", unitBelow ? "gap-1" : "gap-2"].join(" ")}>
       <button type="button" className={btn} onClick={onDown} aria-label={`Decrease ${label}`}>
         <svg className="size-2.5" viewBox="0 0 12 12">
           <line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       </button>
-      <span className="min-w-7 text-center font-mono text-sm text-ink">{value}</span>
+      <span className="flex min-w-7 flex-col items-center leading-none">
+        <span className="text-center font-mono text-sm text-ink">{value}</span>
+        {unit && unitBelow ? <span className="label-mono mt-0.5 !text-[8px] !tracking-wider">{unit}</span> : null}
+      </span>
       <button type="button" className={btn} onClick={onUp} aria-label={`Increase ${label}`}>
         <svg className="size-2.5" viewBox="0 0 12 12">
           <line x1="6" y1="2" x2="6" y2="10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           <line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       </button>
-      {unit ? <span className="label-mono">{unit}</span> : null}
+      {unit && !unitBelow ? <span className="label-mono">{unit}</span> : null}
     </div>
   );
 }
@@ -82,7 +88,20 @@ const toggleBase =
 const quietToggle = "border-rule bg-paper-deep text-ink-soft hover:border-brass hover:text-brass-deep";
 
 
+/** Taal / tabla controls for the metronome card. Left out, the card is a plain metronome. */
+type RhythmProps = {
+  id: string;
+  setId: (id: string) => void;
+  beats: number;
+  sections: number[];
+  khali: number[];
+  status: "idle" | "loading" | "ready" | "error";
+  level: number;
+  setLevel: (v: number) => void;
+};
+
 type Props = {
+  rhythm?: RhythmProps;
   volume: number;
   setVolume: (v: number) => void;
   reverb: number;
@@ -154,41 +173,117 @@ export function ControlDeck(p: Props) {
         />
       </Tile>
 
-      <Tile label="Metronome">
-        <Stepper
-          label="tempo"
-          value={p.bpm}
-          unit="bpm"
-          onDown={() => p.setBpm(clamp(p.bpm - 2, 30, 260))}
-          onUp={() => p.setBpm(clamp(p.bpm + 2, 30, 260))}
-        />
-        <div className="flex items-center gap-1.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className={[
-                "size-[7px] rounded-full transition-all duration-75",
-                p.beat === i
-                  ? i === 0
-                    ? "bg-brass shadow-[0_0_8px_var(--brass)]"
-                    : "bg-brass-deep"
-                  : "bg-key-white-edge",
-              ].join(" ")}
-            />
-          ))}
+      <Tile label={p.rhythm ? "Metronome · Taal" : "Metronome"}>
+        {p.rhythm ? (
+          <select
+            className="h-7 w-full rounded-md border border-rule bg-paper-deep px-1.5 font-mono text-[10px] text-ink"
+            value={p.rhythm.id}
+            aria-label="Rhythm"
+            onChange={(e) => p.rhythm?.setId(e.target.value)}
+          >
+            <option value="click">Simple metronome</option>
+            <optgroup label="Tabla taals">
+              {TAALS.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        ) : null}
+        <div className="flex items-center justify-between gap-2">
+          <Stepper
+            label="tempo"
+            value={p.bpm}
+            unit="bpm"
+            unitBelow
+            onDown={() => p.setBpm(clamp(p.bpm - 2, 30, 260))}
+            onUp={() => p.setBpm(clamp(p.bpm + 2, 30, 260))}
+          />
+          <button
+            type="button"
+            onClick={p.toggleMetronome}
+            className={[
+              "h-7 min-w-0 flex-1 rounded-md border px-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition",
+              p.metronomeOn ? "border-brass bg-brass text-card" : quietToggle,
+            ].join(" ")}
+          >
+            {p.metronomeOn ? "Stop" : "Start"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={p.toggleMetronome}
-          className={[
-            toggleBase,
-            p.metronomeOn
-              ? "border-brass bg-brass text-card"
-              : quietToggle,
-          ].join(" ")}
-        >
-          {p.metronomeOn ? "Stop" : "Start"}
-        </button>
+        <div className="flex h-2 flex-nowrap items-center overflow-hidden" aria-hidden>
+          {Array.from({ length: p.rhythm?.beats ?? 4 }, (_, i) => {
+            const sections = p.rhythm?.sections ?? [4];
+            let start = 0;
+            const startsSection = sections.some((n) => {
+              const hit = start === i;
+              start += n;
+              return hit;
+            });
+            const khali = p.rhythm?.khali.includes(i + 1) && i !== 0;
+            return (
+              <span
+                key={i}
+                className={[
+                  "shrink-0 rounded-full transition-all duration-75",
+                  (p.rhythm?.beats ?? 4) > 12 ? "size-[5px]" : "size-[6px]",
+                  i > 0 && startsSection
+                    ? (p.rhythm?.beats ?? 4) > 12
+                      ? "ml-[5px]"
+                      : "ml-[7px]"
+                    : i > 0
+                      ? (p.rhythm?.beats ?? 4) > 12
+                        ? "ml-[2px]"
+                        : "ml-[3px]"
+                      : "",
+                  p.beat === i
+                    ? i === 0
+                      ? "bg-brass shadow-[0_0_8px_var(--brass)]"
+                      : "bg-brass-deep"
+                    : khali
+                      ? "border border-key-white-edge bg-transparent"
+                      : "bg-key-white-edge",
+                ].join(" ")}
+              />
+            );
+          })}
+        </div>
+        {p.rhythm ? (
+          <div className="flex h-4 items-center gap-2">
+            {p.rhythm.id === "click" ? (
+              <span className="font-mono text-[10px] text-ink-soft">Pick a taal to add tabla</span>
+            ) : p.rhythm.status === "loading" || p.rhythm.status === "error" ? (
+              <span
+                role="status"
+                className={[
+                  "font-mono text-[10px]",
+                  p.rhythm.status === "error" ? "text-danger" : "text-ink-soft",
+                ].join(" ")}
+              >
+                {p.rhythm.status === "error" ? "Couldn't load the tabla" : "Loading tabla…"}
+              </span>
+            ) : (
+              <>
+                <span className="label-mono shrink-0">Tabla</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={p.rhythm.level}
+                  aria-label="Tabla level"
+                  onChange={(e) => p.rhythm?.setLevel(Number(e.target.value))}
+                  className="brass-slider !my-0 min-w-0 flex-1"
+                  style={{
+                    background: `linear-gradient(90deg, var(--brass) ${p.rhythm.level}%, var(--paper-deep) ${p.rhythm.level}%)`,
+                  }}
+                />
+                <span className="w-6 shrink-0 text-right font-mono text-[11px] text-ink-soft">
+                  {p.rhythm.level}
+                </span>
+              </>
+            )}
+          </div>
+        ) : null}
       </Tile>
 
       <Tile label="Recording">
