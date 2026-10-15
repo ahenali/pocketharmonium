@@ -11,6 +11,7 @@ stacking, chord detection, metronome, recording, and a raag guide.
 
 - **Real recorded reeds** — every key is a sampled harmonium reed, pitch-shifted across the keyboard.
 - **Sargam or Western labels** — switch the key labels between Sa Re Ga Ma and C D E F.
+- **Tabla taals**: Use a simple metronome or select a real tabla taal loop from the list.
 - **Raag Guide** — pick a root note and one of ten common raags (Yaman, Bilawal, Bhairav, Bhairavi, Kafi, Asavari, Khamaj, Bhupali, Marwa, Todi) and the notes of that raag light up on the keyboard. Unlock it by starring this repo (see below).
 - **Built for riyaz** — metronome, one-click recording, transposition and reed stacking.
 - **Remembers your setup** — volume, reverb, transpose, octave, reeds, BPM and your raag choice are restored the next time you visit.
