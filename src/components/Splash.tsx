@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLoadStatus } from "@/lib/harmonium/loadStatus";
+import { LogoMark } from "@/components/Logo";
 
 /** Shortest time the splash stays up, so a fast load doesn't flash. */
 const MIN_VISIBLE_MS = 700;
@@ -101,40 +102,11 @@ export function Splash({ active }: { active: boolean }) {
     >
       <style>{css}</style>
 
-      <svg
-        viewBox="0 0 512 512"
-        className="ph-splash-logo size-24 rounded-[22%] shadow-[0_10px_24px_oklch(0_0_0/25%)]"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="ph-splash-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#3b2717" />
-            <stop offset="1" stopColor="#22160e" />
-          </linearGradient>
-        </defs>
-        <rect width="512" height="512" rx="112" fill="url(#ph-splash-bg)" />
-        <path
-          d="M92 130 Q174 76 256 130 T420 130"
-          fill="none"
-          stroke="#c4903f"
-          strokeWidth="24"
-          strokeLinecap="round"
-        />
-        <g fill="#f8f1e3">
-          {[76, 150, 224, 298, 372].map((x) => (
-            <rect key={x} x={x} y="196" width="64" height="216" rx="10" />
-          ))}
-        </g>
-        <g fill="#2b1c12">
-          {[123, 197, 345].map((x) => (
-            <rect key={x} x={x} y="196" width="44" height="132" rx="8" />
-          ))}
-        </g>
-      </svg>
+      <LogoMark className="ph-splash-logo size-24 rounded-[21%] shadow-[0_10px_24px_oklch(0_0_0/25%)]" />
 
       <div>
         <h1 className="font-display text-4xl leading-none tracking-[-0.02em] text-ink">
-          Pocket<span className="text-brass-deep">Harmonium</span>
+          Pocket <span className="italic">Harmonium</span>
         </h1>
         <svg viewBox="0 0 150 12" className="mx-auto mt-3 h-3 w-[150px]" aria-hidden>
           <path

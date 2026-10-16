@@ -15,6 +15,7 @@ import { reportError } from "../lib/error-reporting";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { SocialLinks } from "../components/SocialLinks";
 import { Splash } from "../components/Splash";
+import { LogoMark } from "../components/Logo";
 
 function NotFoundComponent() {
   return (
@@ -154,9 +155,13 @@ function RootComponent() {
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3">
             <Link
               to="/"
-              className="font-display text-[26px] leading-none tracking-[-0.02em] text-ink"
+              aria-label="Pocket Harmonium, home"
+              className="flex items-center gap-2 font-display text-[21px] leading-none tracking-[-0.02em] text-ink sm:gap-2.5 sm:text-[26px]"
             >
-              Pocket<span className="text-brass-deep">Harmonium</span>
+              <LogoMark compact className="size-6 shrink-0 sm:size-8" />
+              <span>
+                Pocket <span className="italic">Harmonium</span>
+              </span>
             </Link>
             <nav className="flex items-center gap-4 sm:gap-5">
               <Link to="/" className={navLink}>
